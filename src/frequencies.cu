@@ -21,7 +21,7 @@ __host__ FrequenciesData* readWavelengthMicron(){
   FrequenciesData* freqData;
   int numFrequencies;
   char line[30];
-  const char* nameFile = "wavelength_micron.inp";
+  const char* nameFile = "inputs/wavelength_micron.inp";
   FILE* wavelengthMicron = fopen(nameFile,"r");
   if (wavelengthMicron == NULL){
     printf("Failed to open wavelength_micron. Maybe don't exist\n");

@@ -119,7 +119,7 @@ Stars* readStars(FrequenciesData* freqData){
   char line[30];
   int numStars;
   int numLambdas;
-  const char* nameFile = "stars.inp";
+  const char* nameFile = "inputs/stars.inp";
   FILE* starsFile = fopen(nameFile, "r");
   if (starsFile == NULL){
     printf("Failed to open stars.inp. Maybe don't exist\n");

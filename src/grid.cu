@@ -119,7 +119,7 @@ Grid* readAmrGrid(){
   char line[30];
   int coordSystem;
   int nCoord[3];
-  const char* nameFile = "amr_grid.inp";
+  const char* nameFile = "inputs/amr_grid.inp";
   FILE* gridFile = fopen(nameFile, "r");
   if (gridFile == NULL){
     printf("Failed to open amr_grid.inp. Maybe don't exist\n");

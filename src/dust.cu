@@ -380,7 +380,7 @@ DustDensity* setUpDustDensity(Grid* grid){
   printf("Set up dustDensity...\n");
   DustDensity* dustDensity;
   int iFormat, numCells, numSpec;
-  const char* nameFile = "dust_density.inp";
+  const char* nameFile = "inputs/dust_density.inp";
   char line[30];
   FILE* densityFile = fopen(nameFile,"r");
   if (densityFile == NULL){

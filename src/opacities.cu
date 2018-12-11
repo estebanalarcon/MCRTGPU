@@ -180,7 +180,7 @@ void readDustKappa(char* nameDust, DustOpacity* dustOpacity, int iSpec){
   char line[300];
   char s[2] = " ";
   char* token;
-  const char* startFile = "dustkappa_";
+  const char* startFile = "inputs/dustkappa_";
   const char* endFile = ".inp";
   strcpy(nameFile, startFile);
   strcat(nameFile,nameDust);
@@ -254,7 +254,7 @@ DustOpacity* readDustOpacity(){
   DustOpacity* dustOpacity;
   int iFormat, numSpec;
   char line[100];
-  const char* nameFile = "dustopac.inp";
+  const char* nameFile = "inputs/dustopac.inp";
   FILE* opacFile = fopen(nameFile, "r");
   if (opacFile == NULL){
     printf("Failed to open dustopac.inp. Maybe don't exist\n");
