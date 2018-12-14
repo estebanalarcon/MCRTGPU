@@ -48,37 +48,50 @@ typedef struct FrequenciesData {
 }FrequenciesData;
 
 typedef struct OpacityCoefficient {
-  double alphaATotal;
-  double alphaSTotal;
-  double alphaTotal;
+  float alphaATotal;
+  float alphaSTotal;
+  float alphaTotal;
   float albedo;
   double dtau;
 }OpacityCoefficient;
 
 typedef struct Photon {
   curandState state;
-  int gridPosition[3];
-  int prevGridPosition[3];
+  short gridPosition[3];
+  short prevGridPosition[3];
   double rayPosition[3];
   double prevRayPosition[3];
   float direction[3];
   double cellWalls[3];
   double distances[3];
-  int orientations[3];
+  bool orientations[3];
   OpacityCoefficient opacCoeff;
-  int iFrequency;
-  int iStar;
+  unsigned short iFrequency;
+  unsigned short iStar;
   bool onGrid;
   bool isScattering;
-  double taupathTotal;
-  double taupathGone;
-  double* alphaASpec;
-  double* alphaSSpec;
+  float taupathTotal;
+  float taupathGone;
+  float* alphaASpec;
+  float* alphaSSpec;
   float* dbCumul;
   double* enerCum;
   double* enerPart;
   double* tempLocal;
 }Photon;
+
+typedef struct TPhoton {
+  curandState state;
+  short gridPosition[3];
+  short prevGridPosition[3];
+  double rayPosition[3];
+  double prevRayPosition[3];
+  float direction[3];
+  double cellWalls[3];
+  double distances[3];
+  bool orientations[3];
+  OpacityCoefficient opacCoeff;
+}TPhoton;
 
 typedef struct DustDensity {
   int iFormat;
@@ -100,7 +113,7 @@ typedef struct EmissivityDatabase {
   float nTemp;
   float temp0;
   float temp1;
-  double* dbTemp;
+  float* dbTemp;
   double** dbEnerTemp;
   double** dbLogEnerTemp;
   double*** dbEmiss;

@@ -31,10 +31,29 @@ int main(void){
   float nTemp = 1000.0;
   float temp0 = 0.01;
   float temp1 = 100000.0;
-  int numPhotons = 1024*400;
+  int numPhotons = 1024*10000;
   int blockSize = 256;
-  int maxParallelPhotons = 1024*400;
+  int maxParallelPhotons = 1024*100;
   int numStreams = numPhotons/maxParallelPhotons;
+  //int* ejemplo = (int*)malloc(sizeof(int)*100);
+  /*Photon *photon = (Photon*)malloc(sizeof(Photon));
+  setUpPhoton(photon, 5, 1);
+  double distances[3];
+  short gridPos[3];
+  Photon p;
+  printf("sizeof p=%zu\n",sizeof(p));
+  printf("sizeof gridPos=%zu\n",sizeof(gridPos));
+  printf("sizeof distances=%zu\n",sizeof(distances));
+  printf("sizeof float*=%zu\n",sizeof(float*));
+  printf("sizeof double*=%zu\n",sizeof(double*));
+  printf("sizeof unsigned short=%zu\n",sizeof(unsigned short));
+  printf("sizeof short=%zu\n",sizeof(short));
+  printf("sizeof curandState=%zu\n",sizeof(curandState));
+  printf("sizeof ejemplo=%zu\n",sizeof(ejemplo));
+  printf("sizeof alphaASpec=%zu\n",sizeof(photon->alphaASpec));
+  printf("sizeof Photon=%zu\n",sizeof(Photon));
+  printf("sizeof TPhoton=%zu\n",sizeof(TPhoton));
+  printf("sizeof OpacityCoefficient=%zu\n",sizeof(OpacityCoefficient));*/
 
   //read, process input data and transfer to device
   Grid* grid = setUpGrid();
@@ -60,7 +79,7 @@ int main(void){
 
   int numSpec = dustDensity->numSpec;
   int numFrequencies = freqData->numFrequencies;
-  //int nx = grid->nCoord[0];
+  int nx = grid->nCoord[0];
   int ny = grid->nCoord[1];
   int nz = grid->nCoord[2];
 
@@ -99,9 +118,11 @@ int main(void){
   printf("numBlocks for temp=%d \n",numBlocks);
   convertEnergyToTemperature<<<numBlocks,blockSize>>>(d_dustTemperature,d_dustDensity,d_grid,d_emissivityDb);
   gpuErrchk(cudaDeviceSynchronize());
+  //printTemp<<<1,1>>>(d_dustTemperature,d_dustDensity);
+  //gpuErrchk(cudaDeviceSynchronize());
 
 
-  writeDustTemperature(dustTemperature, d_dustTemperature, dustDensity);
-  //deallocateDustTemperature(dustTemperature, numSpec, ny,nz);
+  writeDustTemperature(dustTemperature, d_dustTemperature, numSpec,nz,ny,nx);
+  //deallocateDustTemperature(dustTemperature, numSpec, ny,nz);*/
   cudaDeviceReset();
 }

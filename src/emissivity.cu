@@ -8,29 +8,23 @@ __device__ int pickRandomFreqDb(EmissivityDatabase* emissivityDb, Photon* photon
     //float sumTemp1, sumTemp2;
     int numCumul = numFreq+1;
     int intplt = 1;
-    curandState state;
-    double rn;
+    float rn;
     int iSpec = 0;
     int iTemp = 0;
     int inuPick = 0;
-    //double* enerCum = (double*)malloc(sizeof(double)*(numSpec+1));
     photon->enerCum[0] = 0;
     for (int i=1 ; i<(numSpec+1) ; i++){
       photon->enerCum[i] = photon->enerCum[i-1] + enerPart[i-1];
     }
     if (numSpec>1){
-      rn = curand_uniform_double(&state);
-      huntDouble(photon->enerCum, numSpec+1, rn, &iSpec);
+      rn = curand_uniform(&photon->state);
+      huntDouble(photon->enerCum, numSpec+1, (double) rn, &iSpec);
       if ((iSpec<0 || (iSpec>numSpec-1))){
         printf("exit\n");
         //exit(1);
       }
     }
-    //free(enerCum);
-    //printf("iSpec=%d\n",*iSpec);
-    //find temperature in the database
-    //printf("tempLocal=%lg\n",tempLocal[*iSpec]);
-    huntDouble(emissivityDb->dbTemp, emissivityDb->nTemp, tempLocal[iSpec], &iTemp);
+    huntFloat(emissivityDb->dbTemp, emissivityDb->nTemp, tempLocal[iSpec], &iTemp);
     //printf("itemp hunted=%d\n",*iTemp);
     float eps = 0.0;
 
@@ -50,18 +44,12 @@ __device__ int pickRandomFreqDb(EmissivityDatabase* emissivityDb, Photon* photon
     }
 
     if (intplt == 1){
-      //printf("numFrequencies=%d\n",numFreq);
-      //printf("itemp=%d\n",*iTemp);
-      //float* dbCumul = (float*)malloc(sizeof(float)*numCumul);
       for (int inu=0 ; inu<numCumul ; inu++){
-        //sumTemp1 = (1.0-eps)*emissivityDb->dbCumulNorm[iSpec][iTemp][inu];
-        //sumTemp2 = eps*emissivityDb->dbCumulNorm[iSpec][iTemp+1][inu];
-        //photon->dbCumul[inu] = sumTemp1+sumTemp2;
         photon->dbCumul[inu] = (1.0-eps)*emissivityDb->dbCumulNorm[iSpec][iTemp][inu] + eps*emissivityDb->dbCumulNorm[iSpec][iTemp+1][inu];
       }
-      double rn = curand_uniform_double(&state);
+      rn = curand_uniform(&photon->state);
       //rn = 0.20160651049169737;
-      huntFloat(photon->dbCumul, numFreq, rn, &inuPick);
+      huntFloat(photon->dbCumul, numFreq, (double) rn, &inuPick);
       //free(dbCumul);
     }else{
       //Now, within this species/size, find the frequency
@@ -70,28 +58,27 @@ __device__ int pickRandomFreqDb(EmissivityDatabase* emissivityDb, Photon* photon
           iTemp++;
         }
       }
-      double rn = curand_uniform_double(&state);
+      rn = curand_uniform(&photon->state);
       //verify dbCumulNorm
-      huntFloat(emissivityDb->dbCumulNorm[iSpec][iTemp-1], numFreq, rn, &inuPick);
+      huntFloat(emissivityDb->dbCumulNorm[iSpec][iTemp-1], numFreq, (double) rn, &inuPick);
     }
     return inuPick;
   }
 
 __device__ double computeDusttempEnergyBd(EmissivityDatabase* emissivityDb, double energy, int iSpec){
   //printf("in computeDusttempEnergyBd\n");
-  double tempReturn=0;
+  double tempReturn=0.0;
   int itemp = 0;
   double logEner = log(energy);
-  double eps;
+  float eps;
   //printf("logEner=%lf\n", logEner);
   //printf("before, itemp=%d\n", *itemp);
-  huntDouble(emissivityDb->dbLogEnerTemp[iSpec], emissivityDb->nTemp, logEner, &itemp);
+  huntDouble(emissivityDb->dbLogEnerTemp[iSpec], emissivityDb->nTemp, (double) logEner, &itemp);
   //printf("itemp=%d\n", *itemp);
   if (itemp >= emissivityDb->nTemp-1){
     printf("ERROR: Too high temperature discovered\n");
     printf("exit\n");
     //exit(1);
-
   }
 
   if (itemp <= -1){
@@ -119,7 +106,7 @@ EmissivityDatabase* allocateMemoryToEmissivityDatabase(float nTemp, float temp0,
   emissivityDb->nTemp = nTemp;
   emissivityDb->temp0 = temp0;
   emissivityDb->temp1 = temp1;
-  emissivityDb->dbTemp = (double*)malloc(sizeof(double)*nTemp);
+  emissivityDb->dbTemp = (float*)malloc(sizeof(float)*nTemp);
   emissivityDb->dbEnerTemp = (double**)malloc(sizeof(double*)*numSpec);
   emissivityDb->dbLogEnerTemp = (double**)malloc(sizeof(double*)*numSpec);
   emissivityDb->dbEmiss = (double***)malloc(sizeof(double**)*numSpec);
@@ -185,9 +172,9 @@ EmissivityDatabase* emissivityDbTransferToDevice(EmissivityDatabase* h_emissivit
     cudaMemcpy(d_emissivityDb, h_emissivityDb, sizeof(EmissivityDatabase), cudaMemcpyHostToDevice);
 
     //dbTemp
-    cudaMalloc((void**)&dbTemp, sizeof(double) * nTemp);
-    cudaMemcpy(&(d_emissivityDb->dbTemp), &dbTemp, sizeof(double *), cudaMemcpyHostToDevice);
-    cudaMemcpy(dbTemp, h_emissivityDb->dbTemp, sizeof(double) * nTemp, cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&dbTemp, sizeof(float) * nTemp);
+    cudaMemcpy(&(d_emissivityDb->dbTemp), &dbTemp, sizeof(float *), cudaMemcpyHostToDevice);
+    cudaMemcpy(dbTemp, h_emissivityDb->dbTemp, sizeof(float) * nTemp, cudaMemcpyHostToDevice);
 
     //dbEnerTemp,dbLogEnerTemp
     cudaMalloc((void **) &dbEnerTemp,numSpec*sizeof(double*));

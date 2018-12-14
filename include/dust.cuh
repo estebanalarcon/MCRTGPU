@@ -12,7 +12,7 @@ __host__ void inicializeDustTemperature(DustTemperature* dustTemperature, DustDe
 __host__ DustDensity* allocateMemoryToDustDensity(int iFormat, int numCells, int numSpec, Grid* grid);
 __host__ void deallocateDensities(DustDensity* dustDensity);
 __host__ DustDensity* dustDensityTransferToDevice(DustDensity* h_dustDensity);
-__host__ void writeDustTemperature(DustTemperature* h_dustTemperature, DustTemperature* d_dustTemperature, DustDensity* h_dustDensity);
+__host__ void writeDustTemperature(DustTemperature* h_dustTemperature, DustTemperature* d_dustTemperature, int numSpec, int nz, int ny, int nx);
 __host__ DustTemperature* dustTemperatureTransferToDevice(DustTemperature* h_dustTemperature, DustDensity* h_dustDensity);
 __host__ DustDensity* setUpDustDensity(Grid* grid);
 __host__ DustTemperature* setUpDustTemperature(DustDensity* dustDensity, Grid* grid);

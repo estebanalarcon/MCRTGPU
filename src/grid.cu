@@ -24,7 +24,7 @@ __device__ int getIndexFromIxyz(Grid* grid, int* gridPosition){
 }*/
 
 
-__device__ void getCellWalls(Photon* photon, Grid* grid, int gridPosition[], int orientations[]){
+__device__ void getCellWalls(Photon* photon, Grid* grid, short gridPosition[], bool orientations[]){
   //axis x
   photon->cellWalls[0] = grid->cellWallsX[gridPosition[0]+orientations[0]];
   //axis y
@@ -43,11 +43,6 @@ __device__ void convertRayToGrid(Photon* photon, Grid* grid){
   double deltaX = grid->cellWallsX[1]-grid->cellWallsX[0];
   double deltaY = grid->cellWallsY[1]-grid->cellWallsY[0];
   double deltaZ = grid->cellWallsZ[1]-grid->cellWallsZ[0];
-
-  //printf("deltas: %lf, %lf, %lf\n",deltaX,deltaY, deltaZ);
-  //int* gridPosition = (int*)malloc(sizeof(int)*3);
-  //cudaMalloc((void**) &gridPosition,sizeof(double)*3);
-  //printf("temps: %lf, %lf, %lf\n",tempx,tempy,tempz);
 
   photon->gridPosition[0] = (int) floorf(photon->rayPosition[0] / deltaX) + nx/2;
   photon->gridPosition[1] = (int) floorf(photon->rayPosition[1] / deltaY) + ny/2;

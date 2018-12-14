@@ -2,6 +2,8 @@
 #include "emissivity.cuh"
 #include "grid.cuh"
 #include "global_functions.cuh"
+
+__device__ int signs[2] = {-1,1};
 /*
 __global__ void getPhotonsOnGrid(Photon* d_photons, bool* d_photonsOnGrid){
   unsigned int tid = threadIdx.x + blockDim.x * blockIdx.x;
@@ -70,8 +72,8 @@ __device__ void doAbsorptionEvent(Photon* photon, Grid* grid, FrequenciesData* f
     for (int i=0 ; i<dustDensity->numSpec ; i++){
       photon->tempLocal[i] = dustTemperature->temperatures[i][iz][iy][ix];
     }
-    //photon->iFrequency = pickRandomFreqDb(emissivityDb, photon, dustDensity->numSpec, freqData->numFrequencies, photon->tempLocal, photon->enerPart);
-    photon->iFrequency = 55;
+    photon->iFrequency = pickRandomFreqDb(emissivityDb, photon, dustDensity->numSpec, freqData->numFrequencies, photon->tempLocal, photon->enerPart);
+    //photon->iFrequency = 55;
     //printf("newInu=%d\n",photon->iFrequency);
   }
 /*
@@ -80,7 +82,6 @@ __device__ void doAbsorptionEvent(Photon* photon, Grid* grid, FrequenciesData* f
   }*/
 
 __device__ double advanceToNextPosition(Photon* photon, Grid* grid){
-  int signs[2] = {-1,1};
   //obtain orientations. It is 0 (left,down) or 1 (right, up)
   int ix = floor(photon->direction[0])+1.0;
   int iy = floor(photon->direction[1])+1.0;
@@ -142,14 +143,16 @@ __device__ double advanceToNextPosition(Photon* photon, Grid* grid){
 }
 
 __device__ void getTaupath(Photon* photon, curandState* state){
-  double rn = curand_uniform_double(state);
+  float rn = curand_uniform(state);
   photon->taupathTotal = - log(1.0-rn);
   photon->taupathGone = 0.0;
 }
 
 __device__ void findNewFrequencyInu(Photon* photon, curandState* state, double* specCum, FrequenciesData* freqData){
-  double rn = curand_uniform_double(state);
-  huntDouble(specCum, freqData->numFrequencies+1, rn, &(photon->iFrequency));
+  float rn = curand_uniform(state);
+  int freq= (int)photon->iFrequency;
+  huntDouble(specCum, freqData->numFrequencies+1, (double) rn, &freq);
+  photon->iFrequency = (short)freq;
   //printf("rayInu = %d\n",rayInu);
   //return rayInu;
 }
@@ -240,16 +243,17 @@ __device__ void getRandomDirection(Photon* photon, curandState* state){
 __device__ void findStar(Photon* photon, Stars* d_stars, curandState* state){
   photon->iStar = 0;
   if (d_stars->numStars > 1){
-    double rn = curand_uniform_double(state);
-    //huntGPU(d_stars->luminositiesCum, d_stars->numStars+1, rn, &(photon->iStar));
-    huntDouble(d_stars->luminositiesCum, d_stars->numStars+1, rn, &(photon->iStar));
+    float rn = curand_uniform(state);
+    int istar=(int)photon->iStar;
+    huntDouble(d_stars->luminositiesCum, d_stars->numStars+1, (double) rn, &istar);
+    photon->iStar = (short) istar;
   }
 }
 
 __host__ void setUpPhoton(Photon* photon, int numSpec, int numFreq){
 
-  photon->alphaASpec = (double*)malloc(sizeof(double)*numSpec);
-  photon->alphaSSpec = (double*)malloc(sizeof(double)*numSpec);
+  photon->alphaASpec = (float*)malloc(sizeof(float)*numSpec);
+  photon->alphaSSpec = (float*)malloc(sizeof(float)*numSpec);
   photon->dbCumul = (float*)malloc(sizeof(float)*(numFreq+1));
   photon->enerCum = (double*)malloc(sizeof(double)*(numSpec+1));
   photon->enerPart = (double*)malloc(sizeof(double)*numSpec);
@@ -321,7 +325,7 @@ __device__ void inicializePositionPhoton(Photon* photon, Stars* d_stars,
 __device__ void walkNextEvent(Photon* d_photons, Stars* d_stars, DustDensity* d_dustDensity, DustOpacity* d_dustOpacity,
     Grid* d_grid, DustTemperature* d_dustTemperature){
   unsigned int tid = threadIdx.x + blockDim.x * blockIdx.x;
-  double minorDistance, fraction, dum,addTmp;
+  double minorDistance, fraction, dum, addTmp;
   bool carryOn = true;
   //int contador = 0;
   while (carryOn){
@@ -403,7 +407,7 @@ __device__ void walkNextEvent(Photon* d_photons, Stars* d_stars, DustDensity* d_
 __global__ void walkNextEvent2(Photon* d_photons, Stars* d_stars, DustDensity* d_dustDensity, DustOpacity* d_dustOpacity,
   Grid* d_grid, DustTemperature* d_dustTemperature){
     unsigned int tid = threadIdx.x + blockDim.x * blockIdx.x;
-    double minorDistance, fraction, dum,addTmp;
+    double minorDistance, fraction, dum, addTmp;
     bool carryOn = true;
 
     while (carryOn){
@@ -464,7 +468,7 @@ __global__ void walkNextEvent2(Photon* d_photons, Stars* d_stars, DustDensity* d
     }
     //printf("FinalRayPosition: %lf, %lf, %lf\n",d_photons[tid].rayPosition[0],d_photons[tid].rayPosition[1],d_photons[tid].rayPosition[2]);
     //printf("FinalGridPosition: %d, %d, %d\n",d_photons[tid].gridPosition[0],d_photons[tid].gridPosition[1],d_photons[tid].gridPosition[2]);
-    double rn = curand_uniform_double(&d_photons[tid].state);
+    float rn = curand_uniform(&d_photons[tid].state);
     //printf("rn=%lf\n",rn);
     d_photons[tid].isScattering = rn < d_photons[tid].opacCoeff.albedo;
 }
@@ -532,7 +536,7 @@ __global__ void printfPhotons(Photon* d_photons){
 }*/
 
 __global__ void launchPhotons(Photon* d_photons, FrequenciesData* d_freqData, Stars* d_stars, Grid* d_grid,
-  DustDensity* d_dustDensity, DustOpacity* d_dustOpacity, //DustTemperature* d_dustTemperature,
+  DustDensity* d_dustDensity, DustOpacity* d_dustOpacity,
   EmissivityDatabase* d_emissivityDb, DustTemperature* d_dustTemperature){
 
   int scatteringMode = 0;

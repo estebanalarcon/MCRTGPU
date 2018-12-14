@@ -185,13 +185,9 @@ __host__ DustDensity* dustDensityTransferToDevice(DustDensity* h_dustDensity){
   return d_dustDensity;
 }
 
-__host__ void writeDustTemperature(DustTemperature* h_dustTemperature, DustTemperature* d_dustTemperature, DustDensity* h_dustDensity){
+__host__ void writeDustTemperature(DustTemperature* h_dustTemperature, DustTemperature* d_dustTemperature, int numSpec, int nz, int ny, int nx){
   printf("Writing DustTemperature file...\n");
   FILE* fileTemperature = fopen("dust_temperature_gpu.dat","w");
-  int numSpec = h_dustDensity->numSpec;
-  int nz = h_dustDensity->nz;
-  int ny = h_dustDensity->ny;
-  int nx = h_dustDensity->nx;
   double**** support4temp;
   double*** support3temp;
   double** support2temp;
