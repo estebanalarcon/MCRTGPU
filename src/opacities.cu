@@ -197,6 +197,7 @@ void readDustKappa(char* nameDust, DustOpacity* dustOpacity, int iSpec){
     numLambdas = atoi(line);
     allocateMemoryToKappas(dustOpacity, numLambdas, iSpec);
     int i;
+    printf("iFormat %d\n",iFormat);
     //read lambda and kappaAbs
     if (iFormat==1){
       for (i=0 ; i<numLambdas ; i++){

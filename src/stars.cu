@@ -168,6 +168,7 @@ Stars* readStars(FrequenciesData* freqData){
       if (dummy < 0){
         //make blackbody star
         for (j=0 ; j<numLambdas ; j++){
+          //printf("freq %d = %10.20lg\n",j,freqData->frequencies[j]);
           stars->spec[i][j]=blackbodyPlanck(fabs(dummy),freqData->frequencies[j]);
         }
       }else{
@@ -175,11 +176,11 @@ Stars* readStars(FrequenciesData* freqData){
         // Read the full intensity spectrum. Note that the spectrum
         // is given in the usual flux-at-one-parsec format, so we have
         // to translate this here to intensity-at-stellar-surface.
-        stars->spec[i][0] = 3.0308410e36 * dummy / (stars->radius[i]*stars->radius[i]);
+        stars->spec[i][0] = 3.0308410e36 * dummy / (pow(stars->radius[i],2));
         for (j=1 ; j<numLambdas;j++){
           fgets(line, 30, starsFile);
           dummy = atof(line);
-          stars->spec[i][j] = 3.0308410e36 * dummy / (stars->radius[i]*stars->radius[i]);
+          stars->spec[i][j] = 3.0308410e36 * dummy / (pow(stars->radius[i],2));
         }
       }
     }
@@ -209,8 +210,11 @@ void calculateStarsLuminosities(Stars* stars, FrequenciesData* freqData){
   for (iStar=0 ; iStar<stars->numStars ; iStar++){
     stars->luminosities[iStar] = 0;
     for (iFreq=0 ; iFreq<freqData->numFrequencies ; iFreq++){
-      dum = 4*PI*PI*stars->spec[iStar][iFreq] * stars->radius[iStar]*stars->radius[iStar];
+      //printf("spec %d = %10.10lg\n",iFreq,stars->spec[iStar][iFreq]);
+      dum = PI*stars->spec[iStar][iFreq] * FOUR_PI * pow(stars->radius[iStar],2);
+      //printf("dum %d = %10.10lg\n",iFreq,dum);
       stars->luminosities[iStar] += dum * freqData->frequenciesDnu[iFreq];
+      //printf("star_lum %d = %10.10lg\n",iFreq,stars->luminosities[iStar]);
     }
 
     stars->luminositiesTotal += stars->luminosities[iStar];

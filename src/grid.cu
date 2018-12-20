@@ -30,7 +30,7 @@ __device__ void getCellWalls(Photon* photon, Grid* grid, short gridPosition[], b
   //axis y
   photon->cellWalls[1] = grid->cellWallsY[gridPosition[1]+orientations[1]];
   //axis z
-  photon->cellWalls[2] = grid->cellWallsY[gridPosition[2]+orientations[2]];
+  photon->cellWalls[2] = grid->cellWallsZ[gridPosition[2]+orientations[2]];
 
 }
 

@@ -6,11 +6,10 @@ __global__ void printEner(DustTemperature* dustTemperature, DustDensity* dustDen
     for (int k=0 ; k<dustDensity->nz ; k++){
       for (int j=0 ; j<dustDensity->ny ; j++){
         for (int i=0 ; i<dustDensity->nx ; i++){
-          if (contador < 7500){
-            printf("ener %d: %10.10lg\n", contador, dustTemperature->cumulEner[iSpec][k][j][i]);
-            contador++;
+          //if (contador < 10){
+          if ( dustTemperature->cumulEner[iSpec][k][j][i] == 0){
+            printf("ener %d,%d,%d: %10.10lg\n", i,j,k, dustTemperature->cumulEner[iSpec][k][j][i]);
           }
-
         }
       }
     }
@@ -187,7 +186,12 @@ __host__ DustDensity* dustDensityTransferToDevice(DustDensity* h_dustDensity){
 
 __host__ void writeDustTemperature(DustTemperature* h_dustTemperature, DustTemperature* d_dustTemperature, int numSpec, int nz, int ny, int nx){
   printf("Writing DustTemperature file...\n");
+  int totalPositions = nz*ny*nx;
   FILE* fileTemperature = fopen("dust_temperature_gpu.dat","w");
+  /*fprintf(fileTemperature,"%d\n",1);
+  fprintf(fileTemperature,"%d\n",totalPositions);
+  fprintf(fileTemperature,"%d\n",numSpec);*/
+
   double**** support4temp;
   double*** support3temp;
   double** support2temp;

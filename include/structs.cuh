@@ -43,15 +43,15 @@ typedef struct DustOpacity{
 
 typedef struct FrequenciesData {
   int numFrequencies;
-  float* frequencies;
-  float* frequenciesDnu;
+  double* frequencies;
+  double* frequenciesDnu;
 }FrequenciesData;
 
 typedef struct OpacityCoefficient {
-  float alphaATotal;
-  float alphaSTotal;
-  float alphaTotal;
-  float albedo;
+  double alphaATotal;
+  double alphaSTotal;
+  double alphaTotal;
+  double albedo;
   double dtau;
 }OpacityCoefficient;
 
@@ -72,8 +72,8 @@ typedef struct Photon {
   bool isScattering;
   float taupathTotal;
   float taupathGone;
-  float* alphaASpec;
-  float* alphaSSpec;
+  double* alphaASpec;
+  double* alphaSSpec;
   float* dbCumul;
   double* enerCum;
   double* enerPart;
@@ -113,7 +113,7 @@ typedef struct EmissivityDatabase {
   float nTemp;
   float temp0;
   float temp1;
-  float* dbTemp;
+  double* dbTemp;
   double** dbEnerTemp;
   double** dbLogEnerTemp;
   double*** dbEmiss;

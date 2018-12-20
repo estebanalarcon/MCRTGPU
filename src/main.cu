@@ -18,6 +18,61 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+__global__ void kernelGetTaupath(Photon* d_photons){
+  unsigned int tid = threadIdx.x + blockDim.x * blockIdx.x;
+  if (d_photons[tid].onGrid){
+    float rn = curand_uniform(&d_photons[tid].state);
+    d_photons[tid].taupathTotal = - log(1.0-rn);
+    d_photons[tid].taupathGone = 0.0;
+  }
+}
+
+void countPhotonsInGrid(bool* h_onGrid, int numPhotons){
+  int count=0;
+  for (int i=0 ; i<numPhotons ; i++){
+    if (h_onGrid[i]){
+      count++;
+    }
+  }
+  printf("countPhotons = %d\n",count);
+}
+
+void executePhotons(int blockSize, int numParallelPhotons,Photon* d_photons,
+  FrequenciesData* d_freqData, Stars* d_stars, Grid* d_grid, DustDensity* d_dustDensity,
+  DustOpacity* d_dustOpacity, EmissivityDatabase* d_emissivityDb,  DustTemperature* d_dustTemperature){
+    inicializeInicialPhoton<<<numParallelPhotons/blockSize,blockSize>>>(d_photons, d_freqData, d_stars, d_grid, d_dustDensity, d_dustOpacity);
+    gpuErrchk(cudaDeviceSynchronize());
+    launchPhotons<<<numParallelPhotons/blockSize,blockSize>>>(d_photons, d_freqData, d_stars,d_grid,d_dustDensity,d_dustOpacity, d_emissivityDb, d_dustTemperature);
+    gpuErrchk(cudaDeviceSynchronize());
+  }
+
+void executePhotons2(int blockSize, int numParallelPhotons,Photon* d_photons,
+  FrequenciesData* d_freqData, Stars* d_stars, Grid* d_grid, DustDensity* d_dustDensity,
+  DustOpacity* d_dustOpacity, EmissivityDatabase* d_emissivityDb,  DustTemperature* d_dustTemperature,
+  bool* h_onGrid, bool* d_onGrid){
+    inicializeInicialPhoton<<<numParallelPhotons/blockSize,blockSize>>>(d_photons, d_freqData, d_stars, d_grid, d_dustDensity, d_dustOpacity);
+    gpuErrchk(cudaDeviceSynchronize());
+    kernelWalkNextEvent<<<numParallelPhotons/blockSize,blockSize>>>(d_photons,d_stars,d_dustDensity,d_dustOpacity,d_grid,d_dustTemperature);
+    gpuErrchk(cudaDeviceSynchronize());
+    getPhotonsOnGrid<<<numParallelPhotons/blockSize,blockSize>>>(d_photons, d_onGrid);
+    gpuErrchk(cudaDeviceSynchronize());
+    while (arePhotonsOnGrid(d_onGrid, h_onGrid, numParallelPhotons)){
+      //countPhotonsInGrid(h_onGrid, numParallelPhotons);
+      //printf("arePhotonsOnGrid%d...\n",cont);
+      kernelDoAbsorptionEvent<<<numParallelPhotons/blockSize,blockSize>>>(d_photons,d_grid,d_freqData,d_stars,d_dustDensity,d_dustOpacity,d_emissivityDb,d_dustTemperature);
+      gpuErrchk(cudaDeviceSynchronize());
+      //kernelDoScatteringEvent<<<numParallelPhotons/blockSize,blockSize>>>(d_photons);
+      //gpuErrchk(cudaDeviceSynchronize());
+      kernelGetTaupath<<<numParallelPhotons/blockSize,blockSize>>>(d_photons);
+      gpuErrchk(cudaDeviceSynchronize());
+      kernelWalkNextEvent<<<numParallelPhotons/blockSize,blockSize>>>(d_photons,d_stars,d_dustDensity,d_dustOpacity,d_grid,d_dustTemperature);
+      gpuErrchk(cudaDeviceSynchronize());
+      getPhotonsOnGrid<<<numParallelPhotons/blockSize,blockSize>>>(d_photons, d_onGrid);
+      gpuErrchk(cudaDeviceSynchronize());
+
+  }
+  //printf("hola\n");
+}
 
 int main(void){
   //cudaDeviceReset();
@@ -32,28 +87,15 @@ int main(void){
   float temp0 = 0.01;
   float temp1 = 100000.0;
   int numPhotons = 1024*10000;
-  int blockSize = 256;
-  int maxParallelPhotons = 1024*100;
+  int blockSize = 64;
+  int maxParallelPhotons = 1024*50;
   int numStreams = numPhotons/maxParallelPhotons;
-  //int* ejemplo = (int*)malloc(sizeof(int)*100);
-  /*Photon *photon = (Photon*)malloc(sizeof(Photon));
-  setUpPhoton(photon, 5, 1);
-  double distances[3];
-  short gridPos[3];
-  Photon p;
-  printf("sizeof p=%zu\n",sizeof(p));
-  printf("sizeof gridPos=%zu\n",sizeof(gridPos));
-  printf("sizeof distances=%zu\n",sizeof(distances));
-  printf("sizeof float*=%zu\n",sizeof(float*));
-  printf("sizeof double*=%zu\n",sizeof(double*));
-  printf("sizeof unsigned short=%zu\n",sizeof(unsigned short));
-  printf("sizeof short=%zu\n",sizeof(short));
-  printf("sizeof curandState=%zu\n",sizeof(curandState));
-  printf("sizeof ejemplo=%zu\n",sizeof(ejemplo));
-  printf("sizeof alphaASpec=%zu\n",sizeof(photon->alphaASpec));
-  printf("sizeof Photon=%zu\n",sizeof(Photon));
-  printf("sizeof TPhoton=%zu\n",sizeof(TPhoton));
-  printf("sizeof OpacityCoefficient=%zu\n",sizeof(OpacityCoefficient));*/
+  printf("Number of streams = %d\n",numStreams);
+
+  bool* d_onGrid;
+  cudaMalloc((void**)&(d_onGrid), sizeof(bool)*maxParallelPhotons );
+
+  bool* h_onGrid =(bool*) malloc(sizeof(bool)*maxParallelPhotons);
 
   //read, process input data and transfer to device
   Grid* grid = setUpGrid();
@@ -92,20 +134,16 @@ int main(void){
   deallocateFrequenciesData(freqData);
   deallocateGrid(grid);
 
-  Photon* photons = allocatePhotons(maxParallelPhotons, numSpec, numFrequencies);
-  Photon* d_photons = photonsTransferToDevice(photons, maxParallelPhotons, numSpec, numFrequencies);
-  deallocatePhotons(photons, maxParallelPhotons);
+  Photon* photons1 = allocatePhotons(maxParallelPhotons, numSpec, numFrequencies);
+  Photon* d_photons1 = photonsTransferToDevice(photons1, maxParallelPhotons, numSpec, numFrequencies);
+  deallocatePhotons(photons1, maxParallelPhotons);
+
   printf("End transfers...\n");
 
   for (int i=0 ; i<numStreams ; i++){
-    inicializeInicialPhoton<<<maxParallelPhotons/blockSize,blockSize>>>(d_photons, d_freqData, d_stars, d_grid, d_dustDensity, d_dustOpacity);
-    gpuErrchk(cudaDeviceSynchronize());
-    printf("End inicializeInicialPhoton\n");
-    //<<<maxParallelPhotons/blockSize,blockSize>>>
-    launchPhotons<<<maxParallelPhotons/blockSize,blockSize>>>(d_photons, d_freqData, d_stars,d_grid,d_dustDensity,d_dustOpacity, d_emissivityDb, d_dustTemperature);
-    gpuErrchk(cudaDeviceSynchronize());
-    //printf("End launchPhotons \n");
-    printf("End stream%d\n\n",i);
+    printf("Stream %d...\n",i);
+    executePhotons(blockSize, maxParallelPhotons,d_photons1,d_freqData, d_stars,d_grid,d_dustDensity,d_dustOpacity, d_emissivityDb, d_dustTemperature);
+    //executePhotons2(blockSize, maxParallelPhotons,d_photons1,d_freqData, d_stars,d_grid,d_dustDensity,d_dustOpacity, d_emissivityDb, d_dustTemperature,h_onGrid,d_onGrid);
   }
   printf("Convert energy to temperature...\n");
   int totalPositions = dustTemperature->totalPositions;
@@ -118,7 +156,7 @@ int main(void){
   printf("numBlocks for temp=%d \n",numBlocks);
   convertEnergyToTemperature<<<numBlocks,blockSize>>>(d_dustTemperature,d_dustDensity,d_grid,d_emissivityDb);
   gpuErrchk(cudaDeviceSynchronize());
-  //printTemp<<<1,1>>>(d_dustTemperature,d_dustDensity);
+  //printEner<<<1,1>>>(d_dustTemperature,d_dustDensity);
   //gpuErrchk(cudaDeviceSynchronize());
 
 

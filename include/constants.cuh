@@ -4,7 +4,8 @@
 //speed of light
 #define C 2.9979245800000E10
 //Value of PI
-#define PI 3.141592653589793
-
+#define PI 3.14159265358979323846264338328
+//Value of 4*PI
+#define FOUR_PI 12.5663706143591729538505735331
 
 #endif

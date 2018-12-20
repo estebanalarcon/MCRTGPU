@@ -6,8 +6,8 @@
 FrequenciesData* allocateMemoryToFrequenciesData(int numFrequencies){
   FrequenciesData* frequenciesData = (FrequenciesData*)malloc(sizeof(FrequenciesData));
   frequenciesData->numFrequencies = numFrequencies;
-  frequenciesData->frequencies = (float*) malloc (sizeof(float)*numFrequencies);
-  frequenciesData->frequenciesDnu = (float*) malloc (sizeof(float)*numFrequencies);
+  frequenciesData->frequencies = (double*) malloc (sizeof(double)*numFrequencies);
+  frequenciesData->frequenciesDnu = (double*) malloc (sizeof(double)*numFrequencies);
   return frequenciesData;
 }
 
@@ -76,17 +76,17 @@ __host__ void calculateFrequenciesDnu(FrequenciesData* freqData){
 FrequenciesData* frequenciesTransferToDevice(FrequenciesData* h_freqData){
   printf("Transfer frequenciesData to device...\n");
   FrequenciesData* d_freqData;
-  float* frequencies;
-  float* frequenciesDnu;
-  size_t sizeFrequencies = sizeof(float) * (h_freqData->numFrequencies);
+  double* frequencies;
+  double* frequenciesDnu;
+  size_t sizeFrequencies = sizeof(double) * (h_freqData->numFrequencies);
 
   cudaMalloc((void**)&(d_freqData), sizeof(FrequenciesData) );
   cudaMalloc((void**)&frequencies, sizeFrequencies);
   cudaMalloc((void**)&frequenciesDnu, sizeFrequencies);
 
   cudaMemcpy(d_freqData, h_freqData, sizeof(FrequenciesData), cudaMemcpyHostToDevice);
-  cudaMemcpy(&(d_freqData->frequencies), &frequencies, sizeof(float *), cudaMemcpyHostToDevice);
-  cudaMemcpy(&(d_freqData->frequenciesDnu), &frequenciesDnu, sizeof(float *), cudaMemcpyHostToDevice);
+  cudaMemcpy(&(d_freqData->frequencies), &frequencies, sizeof(double *), cudaMemcpyHostToDevice);
+  cudaMemcpy(&(d_freqData->frequenciesDnu), &frequenciesDnu, sizeof(double *), cudaMemcpyHostToDevice);
 
   cudaMemcpy(frequencies, h_freqData->frequencies, sizeFrequencies, cudaMemcpyHostToDevice);
   cudaMemcpy(frequenciesDnu, h_freqData->frequenciesDnu, sizeFrequencies, cudaMemcpyHostToDevice);

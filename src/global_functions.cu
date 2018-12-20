@@ -139,7 +139,7 @@ __host__ __device__ void huntDouble(double* xx, int n, double x, int* jlo){
   }
 }
 
-double* remapFunction(int nOld, double* xOld, double* fOld, int nNew, float* xNew, int elow){
+double* remapFunction(int nOld, double* xOld, double* fOld, int nNew, double* xNew, int elow){
   double* fNew = (double*)malloc(sizeof(double)*nNew);
   int value = 400;
   int *iold = &value;

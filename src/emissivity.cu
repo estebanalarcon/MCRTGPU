@@ -24,7 +24,7 @@ __device__ int pickRandomFreqDb(EmissivityDatabase* emissivityDb, Photon* photon
         //exit(1);
       }
     }
-    huntFloat(emissivityDb->dbTemp, emissivityDb->nTemp, tempLocal[iSpec], &iTemp);
+    huntDouble(emissivityDb->dbTemp, emissivityDb->nTemp, tempLocal[iSpec], &iTemp);
     //printf("itemp hunted=%d\n",*iTemp);
     float eps = 0.0;
 
@@ -106,7 +106,7 @@ EmissivityDatabase* allocateMemoryToEmissivityDatabase(float nTemp, float temp0,
   emissivityDb->nTemp = nTemp;
   emissivityDb->temp0 = temp0;
   emissivityDb->temp1 = temp1;
-  emissivityDb->dbTemp = (float*)malloc(sizeof(float)*nTemp);
+  emissivityDb->dbTemp = (double*)malloc(sizeof(double)*nTemp);
   emissivityDb->dbEnerTemp = (double**)malloc(sizeof(double*)*numSpec);
   emissivityDb->dbLogEnerTemp = (double**)malloc(sizeof(double*)*numSpec);
   emissivityDb->dbEmiss = (double***)malloc(sizeof(double**)*numSpec);
@@ -152,7 +152,7 @@ void deallocateEmissivityDatabase(EmissivityDatabase* emissivityDb, float nTemp,
 EmissivityDatabase* emissivityDbTransferToDevice(EmissivityDatabase* h_emissivityDb, int numFreq, int numSpec){
   printf("Transfer EmissivityDatabase to device...\n");
     EmissivityDatabase* d_emissivityDb;
-    float* dbTemp;
+    double* dbTemp;
     double** dbEnerTemp;
     double** dbLogEnerTemp;
     double*** dbEmiss;
@@ -172,9 +172,9 @@ EmissivityDatabase* emissivityDbTransferToDevice(EmissivityDatabase* h_emissivit
     cudaMemcpy(d_emissivityDb, h_emissivityDb, sizeof(EmissivityDatabase), cudaMemcpyHostToDevice);
 
     //dbTemp
-    cudaMalloc((void**)&dbTemp, sizeof(float) * nTemp);
-    cudaMemcpy(&(d_emissivityDb->dbTemp), &dbTemp, sizeof(float *), cudaMemcpyHostToDevice);
-    cudaMemcpy(dbTemp, h_emissivityDb->dbTemp, sizeof(float) * nTemp, cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&dbTemp, sizeof(double) * nTemp);
+    cudaMemcpy(&(d_emissivityDb->dbTemp), &dbTemp, sizeof(double *), cudaMemcpyHostToDevice);
+    cudaMemcpy(dbTemp, h_emissivityDb->dbTemp, sizeof(double) * nTemp, cudaMemcpyHostToDevice);
 
     //dbEnerTemp,dbLogEnerTemp
     cudaMalloc((void **) &dbEnerTemp,numSpec*sizeof(double*));
@@ -234,6 +234,7 @@ void setUpDbTemp(EmissivityDatabase* emissivityDb){
     x = emissivityDb->temp1/emissivityDb->temp0;
     y = i/(emissivityDb->nTemp-1.0);
     emissivityDb->dbTemp[i] = emissivityDb->temp0 * pow(x,y);
+    //printf("dbTemp %d = %10.20lg\n",i,emissivityDb->dbTemp[i]);
   }
 }
 
@@ -244,7 +245,7 @@ double abservfunc(double temp, double* cellAlpha, FrequenciesData* freqData, dou
     fnuDiff[i] = cellAlpha[i] * blackbodyPlanck(temp, freqData->frequencies[i]);
     demis += fnuDiff[i] * freqData->frequenciesDnu[i];
   }
-  demis = demis * 4 * PI;
+  demis = demis * FOUR_PI;
   return demis;
 }
 
@@ -263,6 +264,7 @@ void setUpDbEnerTemp(EmissivityDatabase* emissivityDb, DustOpacity* dustOpacity,
       demis = abservfunc(emissivityDb->dbTemp[iTemp], cellAlpha, freqData, emissivityDb->dbEmiss[iSpec][iTemp]);
       //printf("demis %d: %20.20lg\n",iTemp,demis );
       emissivityDb->dbEnerTemp[iSpec][iTemp] = demis;
+      //printf("dbEnerTemp %d = %10.15lg\n",iTemp,emissivityDb->dbEnerTemp[iSpec][iTemp]);
       emissivityDb->dbLogEnerTemp[iSpec][iTemp] = log(demis);
     }
     free(cellAlpha);
@@ -315,10 +317,15 @@ __global__ void convertEnergyToTemperature(DustTemperature* d_dustTemperature, D
     for (int i=0 ; i<d_dustDensity->numSpec ; i++){
       ener = d_dustTemperature->cumulEner[i][iz][iy][ix]/(d_dustDensity->densities[i][iz][iy][ix]*d_grid->cellVolumes);
       //printf("ener=%10.10lg\n",ener);
+      //double tmp=d_dustTemperature->temperatures[i][iz][iy][ix];
+      //doubleAtomicAdd(&(d_dustTemperature->temperatures[i][iz][iy][ix]), -tmp);
       if (ener>0.0){
+        //tmp=computeDusttempEnergyBd(d_emissivityDb, ener, i);
+        //doubleAtomicAdd(&(d_dustTemperature->temperatures[i][iz][iy][ix]), tmp);
         d_dustTemperature->temperatures[i][iz][iy][ix] = computeDusttempEnergyBd(d_emissivityDb, ener, i);
         //printf("temp[%d,%d,%d] = %10.10lg\n",ix,iy,iz,d_dustTemperature->temperatures[i][iz][iy][ix]);
       }else{
+        //doubleAtomicAdd(&(d_dustTemperature->temperatures[i][iz][iy][ix]), 0);
         d_dustTemperature->temperatures[i][iz][iy][ix] = 0.0;
       }
     }

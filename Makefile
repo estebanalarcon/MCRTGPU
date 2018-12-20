@@ -1,5 +1,5 @@
 
-CUDAFLAGS += -lineinfo -arch=sm_35 -rdc=true
+CUDAFLAGS += -lineinfo -arch=sm_60 -rdc=true
 CCFLAG += -lstdc++
 CFLAGS += -D_FORCE_INLINES -c -w -O3 -Xptxas -O3
 LDFLAGS += -lcuda -lcudart
@@ -58,6 +58,6 @@ build/stars.o: src/stars.cu
 	@ nvcc $(CUDAFLAGS) $(INC_DIRS) src/stars.cu -o build/stars.o $(CCFLAG) $(CFLAGS) $(LDFLAGS) $(CCFLAG)
 
 clean:
-	@ echo "Cleaning gpuvmem folders.."
+	@ echo "Cleaning MCRTGPU folders.."
 	@ rm -rf build/*
 	@ rm -rf bin/*
