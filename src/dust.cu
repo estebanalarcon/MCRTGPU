@@ -188,9 +188,9 @@ __host__ void writeDustTemperature(DustTemperature* h_dustTemperature, DustTempe
   printf("Writing DustTemperature file...\n");
   int totalPositions = nz*ny*nx;
   FILE* fileTemperature = fopen("dust_temperature_gpu.dat","w");
-  /*fprintf(fileTemperature,"%d\n",1);
+  fprintf(fileTemperature,"%d\n",1);
   fprintf(fileTemperature,"%d\n",totalPositions);
-  fprintf(fileTemperature,"%d\n",numSpec);*/
+  fprintf(fileTemperature,"%d\n",numSpec);
 
   double**** support4temp;
   double*** support3temp;

@@ -5,14 +5,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-typedef struct mcrtGpu{
+
+typedef struct SimulationParameters{
   int numPhotons;
   int numParallelPhotons;
   int blockSize;
   float nTemp;
   float temp0;
   float temp1;
-}mcrtGpu;
+  int scatteringMode;
+  int statusCode;
+}SimulationParameters;
 
 typedef struct Grid {
   //CoordSystem: 0 -> Cartesian
@@ -72,6 +75,7 @@ typedef struct Photon {
   bool isScattering;
   float taupathTotal;
   float taupathGone;
+  double* alphaCum;
   double* alphaASpec;
   double* alphaSSpec;
   float* dbCumul;

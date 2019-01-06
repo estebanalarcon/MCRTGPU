@@ -112,18 +112,21 @@ __global__ void firstKernel(Grid* grid){
 Grid* readAmrGrid(){
   Grid* grid;
   char line[30];
-  int coordSystem;
+  int coordSystem,iFormat, gridStyle,gridInfo;
   int nCoord[3];
+  short incl[3];
   const char* nameFile = "inputs/amr_grid.inp";
   FILE* gridFile = fopen(nameFile, "r");
   if (gridFile == NULL){
     printf("Failed to open amr_grid.inp. Maybe don't exist\n");
     exit(1);
   }else{
+    fscanf(gridFile, "%d\n", &iFormat);
+    fscanf(gridFile, "%d\n", &gridStyle);
     fscanf(gridFile, "%d\n", &coordSystem);
-    //printf("CoordSystem= %d\n",coordSystem);
+    fscanf(gridFile, "%d\n", &gridInfo);
+    fscanf(gridFile, "%d %d %d\n", &incl[0],&incl[1],&incl[2]);
     fscanf(gridFile, "%d %d %d\n", &nCoord[0],&nCoord[1],&nCoord[2]);
-    //printf("nCoord= %d,%d,%d\n",nCoord[0],nCoord[1],nCoord[2]);
     if (nCoord[0] < 1 || nCoord[1] < 1 || nCoord[2] < 1){
       printf("ERROR: nx, ny, nz must be > 0");
       exit(1);

@@ -6,6 +6,7 @@
 
 
 Stars* allocateMemoryToStars(int numStars, int numLambdas){
+  printf("numStars %d\n",numStars);
   Stars* stars = (Stars*)malloc (sizeof(Stars));
   stars->numStars = numStars;
   stars->radius = (double*)malloc(sizeof(double)*numStars);
@@ -14,7 +15,7 @@ Stars* allocateMemoryToStars(int numStars, int numLambdas){
   stars->spec = (double**)malloc(sizeof(double*)*numStars);
   stars->specCum = (double**)malloc(sizeof(double*)*numStars);
   stars->luminosities = (double*)malloc(sizeof(double)*numStars);
-  stars->luminositiesCum = (double*)malloc(sizeof(double)*numStars);
+  stars->luminositiesCum = (double*)malloc(sizeof(double)*(numStars+1));
   stars->energies = (double*)malloc(sizeof(double)*numStars);
 
   int i;
@@ -66,7 +67,7 @@ Stars* starsTransferToDevice(Stars* h_stars, int numLambdas){
   cudaMalloc((void**)&radius, sizeof(double)*numStars);
   cudaMalloc((void**)&masses, sizeof(double)*numStars);
   cudaMalloc((void**)&luminosities, sizeof(double)*numStars);
-  cudaMalloc((void**)&luminositiesCum, sizeof(double)*numStars);
+  cudaMalloc((void**)&luminositiesCum, sizeof(double)*(numStars+1));
   cudaMalloc((void**)&energies, sizeof(double)*numStars);
 
   cudaMemcpy(d_stars, h_stars, sizeof(Stars), cudaMemcpyHostToDevice);
@@ -79,7 +80,7 @@ Stars* starsTransferToDevice(Stars* h_stars, int numLambdas){
   cudaMemcpy(radius, h_stars->radius, sizeof(double)*numStars, cudaMemcpyHostToDevice);
   cudaMemcpy(masses, h_stars->masses, sizeof(double)*numStars, cudaMemcpyHostToDevice);
   cudaMemcpy(luminosities, h_stars->luminosities, sizeof(double)*numStars, cudaMemcpyHostToDevice);
-  cudaMemcpy(luminositiesCum, h_stars->luminositiesCum, sizeof(double)*numStars, cudaMemcpyHostToDevice);
+  cudaMemcpy(luminositiesCum, h_stars->luminositiesCum, sizeof(double)*(numStars+1), cudaMemcpyHostToDevice);
   cudaMemcpy(energies, h_stars->energies, sizeof(double)*numStars, cudaMemcpyHostToDevice);
 
   //positions, spec, specCum
@@ -119,12 +120,14 @@ Stars* readStars(FrequenciesData* freqData){
   char line[30];
   int numStars;
   int numLambdas;
+  int iFormat;
   const char* nameFile = "inputs/stars.inp";
   FILE* starsFile = fopen(nameFile, "r");
   if (starsFile == NULL){
     printf("Failed to open stars.inp. Maybe don't exist\n");
     exit(1);
   }else{
+    fscanf(starsFile, "%d\n",&iFormat);
     fscanf(starsFile, "%d %d\n", &numStars,&numLambdas);
 
     if (numStars < 0){
@@ -143,8 +146,8 @@ Stars* readStars(FrequenciesData* freqData){
     for (i=0 ; i<numStars;i++){
       fscanf(starsFile, "%lf %lf %lf %lf %lf\n",
       &stars->radius[i], &stars->masses[i], &stars->positions[i][0], &stars->positions[i][1], &stars->positions[i][2]);
-      //printf("radius=%10.10lg, masses=%10.10lg, positions=%10.10lg %10.10lg %10.10lg \n",
-      //stars->radius[i], stars->masses[i], stars->positions[i][0], stars->positions[i][1], stars->positions[i][2]);
+      printf("star %d radius=%10.10lg, masses=%10.10lg, positions=%10.10lg %10.10lg %10.10lg \n",i,
+      stars->radius[i], stars->masses[i], stars->positions[i][0], stars->positions[i][1], stars->positions[i][2]);
     }
 
     for (i=0 ; i<numLambdas ; i++){
@@ -219,6 +222,8 @@ void calculateStarsLuminosities(Stars* stars, FrequenciesData* freqData){
 
     stars->luminositiesTotal += stars->luminosities[iStar];
   }
+  printf("star luminosities %10.10lg %10.10lg\n",stars->luminosities[0],stars->luminosities[1]);
+  printf("star luminositiesTotal %10.10lg\n",stars->luminositiesTotal);
 
   if (stars->luminositiesTotal > 0){
     stars->luminositiesCum[0] = 0;
@@ -227,6 +232,7 @@ void calculateStarsLuminosities(Stars* stars, FrequenciesData* freqData){
     }
     stars->luminositiesCum[stars->numStars] = 1;
   }
+  printf("star lumcum %10.10lg %10.10lg %10.10lg\n",stars->luminositiesCum[0],stars->luminositiesCum[1],stars->luminositiesCum[2]);
 }
 
 void calculateEnergyStars(Stars* stars, int numPhotons){
@@ -242,6 +248,26 @@ void calculateEnergyStars(Stars* stars, int numPhotons){
   for (iStar=0 ; iStar<stars->numStars; iStar++){
     stars->energies[iStar] = stars->luminosities[iStar] * numStarSrc / numPhotons;
   }
+
+  //fix lum cum
+  stars->luminositiesCum[0] = 0;
+  if (stars->luminosities[0] > 0){
+    stars->luminositiesCum[1] = 1.0 / numStarSrc;
+  }else{
+    stars->luminositiesCum[1] = 0.0;
+  }
+  for (int i=1 ; i<stars->numStars ; i++){
+    if (stars->luminosities[i] > 0){
+      stars->luminositiesCum[i+1] = stars->luminositiesCum[i] + 1.0 / numStarSrc;
+    }else{
+      printf("ERROR: Cannot treat star with zero luminosity\n");
+      printf("Give tiny (but non-zero) luminosity instead.\n");
+      exit(1);
+    }
+  }
+  stars->luminositiesCum[stars->numStars]=1.0;
+  printf("star lumcum %10.10lg %10.10lg %10.10lg\n",stars->luminositiesCum[0],stars->luminositiesCum[1],stars->luminositiesCum[2]);
+
 }
 
 void jitterStars(Stars* stars, Grid* grid){
@@ -258,6 +284,7 @@ void jitterStars(Stars* stars, Grid* grid){
     stars->positions[iStar][0] = stars->positions[iStar][0] + szx*smallNumberX;
     stars->positions[iStar][1] = stars->positions[iStar][1] + szy*smallNumberY;
     stars->positions[iStar][2] = stars->positions[iStar][2] + szz*smallNumberZ;
+    printf("Position star %d = %10.10lg %10.10lg %10.10lg\n", iStar, stars->positions[iStar][0],stars->positions[iStar][1],stars->positions[iStar][2]);
   }
 }
 

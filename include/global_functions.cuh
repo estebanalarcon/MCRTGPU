@@ -2,7 +2,9 @@
 #define GLOBAL_FUNCTIONS_CUH
 #include "structs.cuh"
 
-
+SimulationParameters* parametersTransferToDevice(SimulationParameters h_params);
+SimulationParameters readInputParameters(int argc, char **argv);
+void checkSimulationParameters(SimulationParameters param);
 /*
 --------------------------------------------------------------------------
                 THE BLACKBODY PLANCK FUNCTION B_nu(T)

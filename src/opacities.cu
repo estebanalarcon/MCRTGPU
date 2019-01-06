@@ -51,9 +51,11 @@ DustOpacity* dustOpacityTransferToDevice(DustOpacity* h_dustOpacity, int numFreq
   double** lambdas;
   double** kappaA;
   double** kappaS;
+  double** g;
   double** supportLam;
   double** supportKA;
   double** supportKS;
+  double** supportG;
 
   cudaMalloc( (void**)&(d_dustOpacity), sizeof(DustOpacity) );
   cudaMalloc((void**)&inputStyle, sizeof(int)*numSpec);
@@ -72,28 +74,40 @@ DustOpacity* dustOpacityTransferToDevice(DustOpacity* h_dustOpacity, int numFreq
   cudaMalloc((void **) &lambdas,numSpec*sizeof(double*));
   cudaMalloc((void **) &kappaA,numSpec*sizeof(double*));
   cudaMalloc((void **) &kappaS,numSpec*sizeof(double*));
+  cudaMalloc((void **) &g,numSpec*sizeof(double*));
+
   supportLam =(double**) malloc(sizeof(double*)*numSpec);
   supportKA =(double**) malloc(sizeof(double*)*numSpec);
   supportKS =(double**) malloc(sizeof(double*)*numSpec);
+  supportG =(double**) malloc(sizeof(double*)*numSpec);
 
-  for (int i=0;i<numSpec;++i){
+
+  for (int i=0;i<numSpec;i++){
     cudaMalloc((void**) &supportLam[i],sizeof(double)*numFreq);
     cudaMalloc((void**) &supportKA[i],sizeof(double)*numFreq);
     cudaMalloc((void**) &supportKS[i],sizeof(double)*numFreq);
+    cudaMalloc((void**) &supportG[i],sizeof(double)*numFreq);
+
     cudaMemcpy(supportLam[i],h_dustOpacity->lambdas[i],numFreq*sizeof(double),cudaMemcpyHostToDevice);
     cudaMemcpy(supportKA[i],h_dustOpacity->kappaA[i],numFreq*sizeof(double),cudaMemcpyHostToDevice);
     cudaMemcpy(supportKS[i],h_dustOpacity->kappaS[i],numFreq*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(supportG[i],h_dustOpacity->g[i],numFreq*sizeof(double),cudaMemcpyHostToDevice);
+
   }
   cudaMemcpy(lambdas,supportLam,sizeof(double*)*numSpec,cudaMemcpyHostToDevice);
   cudaMemcpy(kappaA,supportKA,sizeof(double*)*numSpec,cudaMemcpyHostToDevice);
   cudaMemcpy(kappaS,supportKS,sizeof(double*)*numSpec,cudaMemcpyHostToDevice);
+  cudaMemcpy(g,supportG,sizeof(double*)*numSpec,cudaMemcpyHostToDevice);
 
   cudaMemcpy(&(d_dustOpacity->lambdas), &lambdas, sizeof(double**), cudaMemcpyHostToDevice);
   cudaMemcpy(&(d_dustOpacity->kappaA), &kappaA, sizeof(double**), cudaMemcpyHostToDevice);
   cudaMemcpy(&(d_dustOpacity->kappaS), &kappaS, sizeof(double**), cudaMemcpyHostToDevice);
+  cudaMemcpy(&(d_dustOpacity->g), &g, sizeof(double**), cudaMemcpyHostToDevice);
+
   free(supportLam);
   free(supportKA);
   free(supportKS);
+  free(supportG);
 
   return d_dustOpacity;
 }

@@ -1,5 +1,116 @@
 #include <math.h>
 #include "global_functions.cuh"
+#include "structs.cuh"
+#include <unistd.h>
+
+SimulationParameters* parametersTransferToDevice(SimulationParameters h_params){
+	SimulationParameters* d_params;
+	cudaMalloc((void**)&(d_params), sizeof(SimulationParameters) );
+	cudaMemcpy(d_params, &h_params, sizeof(SimulationParameters), cudaMemcpyHostToDevice);
+	return d_params;
+}
+
+SimulationParameters readInputParameters(int argc, char **argv){
+	SimulationParameters param;
+	param.nTemp = 1000.0;
+	param.temp0 = 0.01;
+	param.temp1 = 100000.0;
+	param.numPhotons = 0;
+  param.numParallelPhotons = 1024*50;
+  param.blockSize = 0;
+  param.scatteringMode = -1;
+	opterr = 0;
+	int d;
+
+	while ((d = getopt (argc, argv, "N:n:t:i:f:s:b:")) != -1){
+		switch (d){
+			case 'N':
+				sscanf(optarg, "%d", &param.numPhotons);
+				break;
+			case 'n':
+				sscanf(optarg, "%d", &param.numParallelPhotons);
+				break;
+			case 't':
+				sscanf(optarg, "%d", &param.nTemp);
+				break;
+			case 'i':
+				sscanf(optarg, "%d", &param.temp0);
+				break;
+			case 'f':
+        sscanf(optarg, "%d", &param.temp1);
+				break;
+      case 's':
+        sscanf(optarg, "%d", &param.scatteringMode);
+        break;
+      case 'b':
+        sscanf(optarg, "%d", &param.blockSize);
+        break;
+
+			case '?':
+				if (optopt == 'N')
+					fprintf(stderr, "Opcion -%c requiere un argumento\n", optopt);
+				else if (optopt == 'n')
+					fprintf(stderr, "Opcion -%c requiere un argumento\n", optopt);
+				else if (optopt == 't')
+					fprintf(stderr, "Opcion -%c requiere un argumento\n", optopt);
+				else if (optopt == 'i')
+					fprintf(stderr, "Opcion -%c requiere un argumento\n", optopt);
+				else if (optopt == 'f')
+					fprintf(stderr, "Opcion -%c requiere un argumento\n", optopt);
+				else if (optopt == 's')
+					fprintf(stderr, "Opcion -%c requiere un argumento\n", optopt);
+				else
+					fprintf(stderr,
+							"Opcion con caracter desconocido '\\x%x' \n",
+							optopt);
+				param.statusCode=-1;
+				printf("Error con parametros de entrada\n");
+				return param;
+			default:
+				printf("Error con parametros de entrada\n");
+				abort ();
+		}
+	}
+	param.statusCode=0;
+	return param;
+}
+
+void checkSimulationParameters(SimulationParameters param){
+  //blockSize
+  bool blockIsCorrect=false;
+  int sizePosibilities[9] = {2,4,8,16,32,64,128,256,512};
+  for (int i=0 ; i<9 ; i++){
+    if (param.blockSize == sizePosibilities[i]){
+      blockIsCorrect = true;
+    }
+  }
+  if (!blockIsCorrect){
+    printf("Error. Block Size is incorrect. Must be 2,4,8,16,32,64,128,256 or 512\n");
+    exit(0);
+  }
+
+  //numPhotons. Must be multiple of 1024
+  if (param.numPhotons%1024 != 0){
+    printf("Error. Number of photons denied. Must be multiple of 1024\n");
+    exit(0);
+  }
+
+  //numParallelPhotons
+  if (param.numParallelPhotons > param.numPhotons){
+    printf("Error. maxParallelPhotons must be less or equal than number of photons\n");
+    exit(0);
+  }
+  if (param.numPhotons%param.numParallelPhotons != 0){
+    printf("Error. maxParallelPhotons must be divisor of number of photons\n");
+    exit(0);
+  }
+
+  //scatteringMode
+  if (param.scatteringMode < 0 || param.scatteringMode > 2 ){
+    printf("Error. Scattering mode must be 0,1 or 2\n");
+    exit(0);
+  }
+}
 
 double blackbodyPlanck(double temp, double freq){
   double explargest = 709.78271;
