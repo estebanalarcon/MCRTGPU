@@ -316,16 +316,9 @@ __global__ void convertEnergyToTemperature(DustTemperature* d_dustTemperature, D
     double ener;
     for (int i=0 ; i<d_dustDensity->numSpec ; i++){
       ener = d_dustTemperature->cumulEner[i][iz][iy][ix]/(d_dustDensity->densities[i][iz][iy][ix]*d_grid->cellVolumes);
-      //printf("ener=%10.10lg\n",ener);
-      //double tmp=d_dustTemperature->temperatures[i][iz][iy][ix];
-      //doubleAtomicAdd(&(d_dustTemperature->temperatures[i][iz][iy][ix]), -tmp);
       if (ener>0.0){
-        //tmp=computeDusttempEnergyBd(d_emissivityDb, ener, i);
-        //doubleAtomicAdd(&(d_dustTemperature->temperatures[i][iz][iy][ix]), tmp);
         d_dustTemperature->temperatures[i][iz][iy][ix] = computeDusttempEnergyBd(d_emissivityDb, ener, i);
-        //printf("temp[%d,%d,%d] = %10.10lg\n",ix,iy,iz,d_dustTemperature->temperatures[i][iz][iy][ix]);
       }else{
-        //doubleAtomicAdd(&(d_dustTemperature->temperatures[i][iz][iy][ix]), 0);
         d_dustTemperature->temperatures[i][iz][iy][ix] = 0.0;
       }
     }
