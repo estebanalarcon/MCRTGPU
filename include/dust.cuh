@@ -3,8 +3,6 @@
 
 #include "structs.cuh"
 
-__global__ void printEner(DustTemperature* dustTemperature, DustDensity* dustDensity);
-__global__ void printTemp(DustTemperature* dustTemperature, DustDensity* dustDensity);
 __host__ DustTemperature* allocateMemoryToDustTemperature(int numSpec, Grid* grid);
 __host__ void deallocateCumulEner(DustTemperature* dustTemperature, int numSpec, int ny, int nz);
 __host__ void deallocateDustTemperature(DustTemperature* dustTemperature, int numSpec, int ny, int nz);

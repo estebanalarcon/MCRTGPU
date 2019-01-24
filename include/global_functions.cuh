@@ -23,5 +23,4 @@ double blackbodyPlanck(double temp, double freq);
 __host__ __device__ void huntFloat(float* xx, int n, double x, int* jlo);
 __host__ __device__ void huntDouble(double* xx, int n, double x, int* jlo);
 double* remapFunction(int nOld, double* xOld, double* fOld, int nNew, double* xNew, int elow);
-__device__ double doubleAtomicAdd(double* address, double val);
 #endif

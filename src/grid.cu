@@ -1,27 +1,5 @@
 #include <cuda_fp16.h>
 #include "grid.cuh"
-/*
-__device__ int* getIxyzFromIndex(Grid* grid, int index){
-  int* gridPosition = (int*)malloc(sizeof(int)*3);
-  int nxy = grid->nCoord[0]*grid->nCoord[1];
-  int iz = index/nxy;
-  int idx1 = index - iz*nxy;
-  int iy = idx1/grid->nCoord[0];
-  int ix = idx1-iy*grid->nCoord[0];
-  int* direction = (int*)malloc(sizeof(int)*3);
-  gridPosition[0] = ix;
-  gridPosition[1] = iy;
-  gridPosition[2] = iz;
-  return gridPosition;
-}*/
-
-/*
-__device__ int getIndexFromIxyz(Grid* grid, int* gridPosition){
-  int ix = gridPosition[0];
-  int iy = gridPosition[1];
-  int iz = gridPosition[2];
-  return ix + iy*grid->nCoord[0] + iz*grid->nCoord[0]*grid->nCoord[1];
-}*/
 
 
 __device__ void getCellWalls(Photon* photon, Grid* grid, short gridPosition[], bool orientations[]){
@@ -99,15 +77,6 @@ Grid* gridTransferToDevice(Grid* h_grid){
 
   return d_grid;
 }
-/*
-__global__ void firstKernel(Grid* grid){
-  printf("IN MYKERNEL\n");
-  int i = threadIdx.x;
-  printf("threadIdx%d\n",i);
-  printf("coordX= %d, coordY= %d, coordZ= %d\n",grid->nCoord[0],grid->nCoord[1],grid->nCoord[2]);
-  printf("cellWallsX[0]=%lf\n",grid->cellWallsX[0]);
-  printf("cellWallsX[1]=%lf\n",grid->cellWallsX[1]);
-}*/
 
 Grid* readAmrGrid(){
   Grid* grid;

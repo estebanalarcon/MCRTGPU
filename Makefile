@@ -1,7 +1,7 @@
 
 CUDAFLAGS += -lineinfo -arch=sm_60 -rdc=true
 CCFLAG += -lstdc++
-CFLAGS += -D_FORCE_INLINES -c -w -O3 -Xptxas -O3
+CFLAGS += -D_FORCE_INLINES -c -w -O3
 LDFLAGS += -lcuda -lcudart
 CCFLAG += -lstdc++
 INC_DIRS += -Iinclude

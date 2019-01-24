@@ -2,8 +2,6 @@
 #include "global_functions.cuh"
 #include "stars.cuh"
 
-//CONSTANTS
-
 
 Stars* allocateMemoryToStars(int numStars, int numLambdas){
   printf("numStars %d\n",numStars);
