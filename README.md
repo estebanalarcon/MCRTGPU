@@ -1,8 +1,10 @@
 # MCRTGPU: MONTE CARLO RADIATIVE TRANSFER FOR GPU
-## Authors: 
-E. Alarcón
-F.R. Rannou
-P.E. Román
+## Contributors: 
+E. Alarcón - Universidad de Santiago de Chile esteban.alarcon.v@usach.cl
+
+F.R. Rannou - Universidad de Santiago de Chile
+
+P.E. Román - Universidad de Santiago de Chile
 
 ## Installation
 1.- Install CUDA >= 9.
@@ -33,3 +35,14 @@ make
 
 -b: CUDA block size. It must be 2,4,8,16,32,64,128,256 or 512. 32 is recommended.
 
+## Usage
+
+1. Create inputs/ folder in MCRTGPU directory.
+2. Copy input files in new folder.
+3. In MCRTGPU directory, run command (example):
+```bash
+./bin/mcrtgpu -N 102400 -b 32 -s 0
+```
+4. The out file name is dust_temperature_gpu.dat.
+
+Important: The input files are the same format that RADMC-3D. Warning with spaces characters between values in the same line: It must be one space character or one tab character. Other way would cause incorrect results. 
